@@ -4,15 +4,20 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const midtransClient = require('midtrans-client');
-const cors = require('cors');
+// const cors = require('cors'); // Kita tidak akan menggunakan ini lagi, diganti dengan metode manual
 require('dotenv').config();
 
 // 2. Inisialisasi aplikasi Express
 const app = express();
 
-// --- PERBAIKAN CORS (Versi Disederhanakan) ---
-// Mengizinkan semua koneksi dari mana saja. Ini lebih sederhana dan seringkali lebih andal.
-app.use(cors());
+// --- PERBAIKAN CORS (Metode Manual) ---
+// Mengatur header secara manual untuk kontrol penuh dan menghindari konflik package.
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Izinkan koneksi dari semua alamat
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Authorization');
+  next();
+});
 
 app.use(express.json());
 
