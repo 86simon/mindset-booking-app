@@ -1,0 +1,7 @@
+# .gitignore
+
+# Abaikan file environment yang berisi kunci rahasia
+.env
+
+# Abaikan folder node_modules
+node_modules/
