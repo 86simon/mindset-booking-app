@@ -5,23 +5,16 @@ const express = require('express');
 const { MongoClient } = require('mongodb');
 const midtransClient = require('midtrans-client');
 const cors = require('cors');
-require('dotenv').config(); // Memuat variabel dari file .env
+require('dotenv').config();
 
 // 2. Inisialisasi aplikasi Express
 const app = express();
 
-// --- PERBAIKAN CORS ---
-// Konfigurasi CORS yang lebih spesifik untuk mengatasi masalah browser
-const corsOptions = {
-  origin: '*', // Izinkan koneksi dari semua alamat
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Mengaktifkan pre-flight request untuk semua rute
+// --- PERBAIKAN CORS (Versi Disederhanakan) ---
+// Mengizinkan semua koneksi dari mana saja. Ini lebih sederhana dan seringkali lebih andal.
+app.use(cors());
 
-app.use(express.json()); // Izinkan server membaca body JSON
+app.use(express.json());
 
 // 3. Konfigurasi Koneksi Database dan Midtrans
 const mongoUri = process.env.MONGO_URI;
@@ -39,22 +32,41 @@ let snap = new midtransClient.Snap({
 async function connectDB() {
     try {
         await client.connect();
-        db = client.db("mindset_psychology"); // Anda bisa ganti nama database ini jika mau
+        db = client.db("mindset_psychology");
         console.log("Berhasil terhubung ke MongoDB");
     } catch (err) {
         console.error("Gagal terhubung ke MongoDB", err);
+        // Hentikan proses jika tidak bisa konek ke DB
+        process.exit(1);
     }
 }
 
 // 4. Membuat API Endpoints
 
+// Endpoint untuk mengambil semua data booking (untuk dashboard admin)
+app.get('/api/get-bookings', async (req, res) => {
+    try {
+        if (!db) {
+            return res.status(503).send("Database tidak terhubung.");
+        }
+        const collection = db.collection('bookings');
+        const bookings = await collection.find({}).sort({ createdAt: -1 }).toArray();
+        res.json(bookings);
+    } catch (error) {
+        console.error("Error mengambil bookings:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
 // Endpoint untuk membuat transaksi dan mendapatkan token Midtrans
 app.post('/api/buat-transaksi', async (req, res) => {
     try {
+        if (!db) {
+            return res.status(503).send("Database tidak terhubung.");
+        }
         const bookingData = req.body;
         const orderId = 'MINDSET-' + Date.now();
 
-        // Simpan data awal ke MongoDB dengan status "Menunggu Pembayaran"
         const collection = db.collection('bookings');
         await collection.insertOne({
             ...bookingData,
@@ -63,7 +75,6 @@ app.post('/api/buat-transaksi', async (req, res) => {
             createdAt: new Date()
         });
 
-        // Siapkan parameter untuk Midtrans
         let parameter = {
             "transaction_details": {
                 "order_id": orderId,
@@ -83,7 +94,6 @@ app.post('/api/buat-transaksi', async (req, res) => {
             }
         };
 
-        // Dapatkan token dari Midtrans
         const token = await snap.createTransactionToken(parameter);
         res.json({ token, orderId });
 
@@ -96,19 +106,19 @@ app.post('/api/buat-transaksi', async (req, res) => {
 // Endpoint untuk menerima notifikasi dari Midtrans (Webhook)
 app.post('/api/notifikasi-midtrans', async (req, res) => {
     try {
+        if (!db) {
+            return res.status(503).send("Database tidak terhubung.");
+        }
         const notificationJson = req.body;
         const statusResponse = await snap.transaction.notification(notificationJson);
         
         let order_id = statusResponse.order_id;
         let transaction_status = statusResponse.transaction_status;
-        let fraud_status = statusResponse.fraud_status;
 
         console.log(`Transaksi ID ${order_id}: ${transaction_status}`);
 
-        // Update database berdasarkan status pembayaran
         const collection = db.collection('bookings');
         if (transaction_status == 'capture' || transaction_status == 'settlement') {
-            // TODO: Tambahkan logika pengiriman email SendGrid di sini
             await collection.updateOne({ orderId: order_id }, { $set: { status: 'Lunas' } });
         }
         
@@ -119,22 +129,9 @@ app.post('/api/notifikasi-midtrans', async (req, res) => {
     }
 });
 
-// Endpoint untuk mengambil semua data booking (untuk dashboard admin)
-app.get('/api/get-bookings', async (req, res) => {
-    try {
-        const collection = db.collection('bookings');
-        const bookings = await collection.find({}).sort({ createdAt: -1 }).toArray();
-        res.json(bookings);
-    } catch (error) {
-        console.error("Error mengambil bookings:", error);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
 
 // 5. Jalankan Server
-const PORT = process.env.PORT || 3000;
-// Perbaikan: Tambahkan '0.0.0.0' agar server mendengarkan koneksi dari luar VPS
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
     connectDB();
     console.log(`Server berjalan di port ${PORT} dan siap menerima koneksi dari mana saja.`);
