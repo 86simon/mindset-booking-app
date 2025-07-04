@@ -4,20 +4,15 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const midtransClient = require('midtrans-client');
-// const cors = require('cors'); // Kita tidak akan menggunakan ini lagi, diganti dengan metode manual
+const cors = require('cors'); // Kita kembali menggunakan package cors standar
 require('dotenv').config();
 
 // 2. Inisialisasi aplikasi Express
 const app = express();
 
-// --- PERBAIKAN CORS (Metode Manual) ---
-// Mengatur header secara manual untuk kontrol penuh dan menghindari konflik package.
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Izinkan koneksi dari semua alamat
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Authorization');
-  next();
-});
+// --- Menggunakan package cors ---
+// Ini adalah cara yang paling umum dan stabil untuk menangani CORS.
+app.use(cors());
 
 app.use(express.json());
 
@@ -41,8 +36,7 @@ async function connectDB() {
         console.log("Berhasil terhubung ke MongoDB");
     } catch (err) {
         console.error("Gagal terhubung ke MongoDB", err);
-        // Hentikan proses jika tidak bisa konek ke DB
-        process.exit(1);
+        process.exit(1); // Hentikan proses jika tidak bisa konek ke DB
     }
 }
 
@@ -51,9 +45,7 @@ async function connectDB() {
 // Endpoint untuk mengambil semua data booking (untuk dashboard admin)
 app.get('/api/get-bookings', async (req, res) => {
     try {
-        if (!db) {
-            return res.status(503).send("Database tidak terhubung.");
-        }
+        if (!db) return res.status(503).send("Database tidak terhubung.");
         const collection = db.collection('bookings');
         const bookings = await collection.find({}).sort({ createdAt: -1 }).toArray();
         res.json(bookings);
@@ -66,9 +58,7 @@ app.get('/api/get-bookings', async (req, res) => {
 // Endpoint untuk membuat transaksi dan mendapatkan token Midtrans
 app.post('/api/buat-transaksi', async (req, res) => {
     try {
-        if (!db) {
-            return res.status(503).send("Database tidak terhubung.");
-        }
+        if (!db) return res.status(503).send("Database tidak terhubung.");
         const bookingData = req.body;
         const orderId = 'MINDSET-' + Date.now();
 
@@ -111,9 +101,7 @@ app.post('/api/buat-transaksi', async (req, res) => {
 // Endpoint untuk menerima notifikasi dari Midtrans (Webhook)
 app.post('/api/notifikasi-midtrans', async (req, res) => {
     try {
-        if (!db) {
-            return res.status(503).send("Database tidak terhubung.");
-        }
+        if (!db) return res.status(503).send("Database tidak terhubung.");
         const notificationJson = req.body;
         const statusResponse = await snap.transaction.notification(notificationJson);
         
