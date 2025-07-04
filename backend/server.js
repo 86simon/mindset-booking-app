@@ -9,7 +9,18 @@ require('dotenv').config(); // Memuat variabel dari file .env
 
 // 2. Inisialisasi aplikasi Express
 const app = express();
-app.use(cors()); // Izinkan akses dari domain lain
+
+// --- PERBAIKAN CORS ---
+// Konfigurasi CORS yang lebih spesifik untuk mengatasi masalah browser
+const corsOptions = {
+  origin: '*', // Izinkan koneksi dari semua alamat
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Mengaktifkan pre-flight request untuk semua rute
+
 app.use(express.json()); // Izinkan server membaca body JSON
 
 // 3. Konfigurasi Koneksi Database dan Midtrans
