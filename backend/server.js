@@ -3,7 +3,7 @@
 // 1. Impor semua package yang dibutuhkan
 const express = require('express');
 const { MongoClient } = require('mongodb');
-const midtransClient = require('midtrans-client'); // <-- PERBAIKAN DI SINI
+const midtransClient = require('midtrans-client');
 const cors = require('cors');
 require('dotenv').config(); // Memuat variabel dari file .env
 
@@ -123,7 +123,8 @@ app.get('/api/get-bookings', async (req, res) => {
 
 // 5. Jalankan Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// Perbaikan: Tambahkan '0.0.0.0' agar server mendengarkan koneksi dari luar VPS
+app.listen(PORT, '0.0.0.0', () => {
     connectDB();
-    console.log(`Server berjalan di port ${PORT}`);
+    console.log(`Server berjalan di port ${PORT} dan siap menerima koneksi dari mana saja.`);
 });
