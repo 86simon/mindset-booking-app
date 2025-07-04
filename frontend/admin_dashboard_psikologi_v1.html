@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Mindset Psychology & Counseling</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/logo.png?v=2">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Feather Icons for UI elements -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        :root {
+            --brand-green: #9ec05d;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-lunas {
+            background-color: #dcfce7; /* green-100 */
+            color: #166534; /* green-800 */
+        }
+        .status-menunggu {
+            background-color: #fef9c3; /* yellow-100 */
+            color: #854d0e; /* yellow-800 */
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--brand-green);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8">
+
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+             <div class="flex items-center gap-4">
+                <img src="images/logo.png?v=2" alt="Logo" class="w-16 h-16 rounded-full" onerror="this.onerror=null; this.src='https://placehold.co/64x64/9ec05d/ffffff?text=Logo';">
+                <div>
+                    <h1 class="text-3xl font-bold" style="color: #6b843e;">Dashboard Admin</h1>
+                    <p class="mt-1 text-slate-500">Selamat datang! Berikut adalah daftar pendaftaran yang masuk.</p>
+                </div>
+            </div>
+            <button id="refresh-btn" class="flex items-center gap-2 mt-4 sm:mt-0 bg-white px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition-colors">
+                 <i data-feather="refresh-cw" class="w-4 h-4 text-slate-500"></i>
+                 <span class="text-sm text-slate-600 font-semibold">Refresh</span>
+            </button>
+        </header>
+
+        <!-- Main Content: Bookings Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Tanggal Daftar</th>
+                            <th scope="col" class="px-6 py-3">Nama Klien</th>
+                            <th scope="col" class="px-6 py-3">Kontak</th>
+                            <th scope="col" class="px-6 py-3">Layanan</th>
+                            <th scope="col" class="px-6 py-3">Jadwal Sesi</th>
+                            <th scope="col" class="px-6 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-table-body">
+                        <!-- Rows will be injected here -->
+                        <tr id="loading-row">
+                            <td colspan="6" class="text-center p-16">
+                                <div class="loader mx-auto"></div>
+                                <p class="mt-4 font-semibold text-slate-500">Memuat data pendaftaran...</p>
+                            </td>
+                        </tr>
+                        <tr id="empty-row" class="hidden">
+                            <td colspan="6" class="text-center p-16">
+                                <i data-feather="inbox" class="w-16 h-16 mx-auto text-slate-300"></i>
+                                <p class="mt-4 font-semibold text-slate-500">Belum ada pendaftaran yang masuk.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-slate-400 text-xs">
+            <p>&copy; <span id="current-year"></span> Mindset Psychology & Counseling</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // PENTING: Ganti nilai di bawah ini dengan alamat IP atau domain server Anda!
+            // Contoh: 'http://123.45.67.89:3000' atau 'https://api.domainanda.com'
+            const BACKEND_URL = 'http://[ALAMAT_IP_VPS_ANDA]:3000'; // GANTI INI!
+
+            const bookingsTableBody = document.getElementById('bookings-table-body');
+            const loadingRow = document.getElementById('loading-row');
+            const emptyRow = document.getElementById('empty-row');
+            const refreshBtn = document.getElementById('refresh-btn');
+
+            function formatTimestamp(isoDateString) {
+                if (!isoDateString) return 'N/A';
+                return new Date(isoDateString).toLocaleString('id-ID', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+            
+            function formatScheduleDate(isoDateString, time) {
+                 if (!isoDateString || !time) return 'N/A';
+                 const date = new Date(isoDateString);
+                 return `${date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} - ${time}`;
+            }
+
+            function renderTable(bookings) {
+                loadingRow.classList.add('hidden');
+                bookingsTableBody.innerHTML = ''; 
+
+                if (bookings.length === 0) {
+                    bookingsTableBody.appendChild(emptyRow);
+                    emptyRow.classList.remove('hidden');
+                    return;
+                }
+                
+                emptyRow.classList.add('hidden');
+                
+                bookings.forEach(booking => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-white border-b hover:bg-slate-50';
+                    const statusClass = booking.status === 'Lunas' ? 'status-lunas' : 'status-menunggu';
+
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${formatTimestamp(booking.createdAt)}</td>
+                        <td class="px-6 py-4 font-semibold">${booking.userInfo.fullName}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2 text-slate-500">
+                               <i data-feather="mail" class="w-4 h-4"></i> ${booking.userInfo.email}
+                            </div>
+                            <div class="flex items-center gap-2 text-slate-500 mt-1">
+                               <i data-feather="phone" class="w-4 h-4"></i> ${booking.userInfo.whatsapp}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">${booking.service.name}</td>
+                        <td class="px-6 py-4">${formatScheduleDate(booking.date, booking.time)}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="status-badge ${statusClass}">${booking.status}</span>
+                        </td>
+                    `;
+                    bookingsTableBody.appendChild(row);
+                });
+                feather.replace();
+            }
+
+            async function fetchBookings() {
+                // Periksa apakah URL sudah diganti
+                if (BACKEND_URL.includes('[ALAMAT_IP_VPS_ANDA]')) {
+                    bookingsTableBody.innerHTML = `<tr id="error-row"><td colspan="6" class="text-center p-16 text-orange-600 bg-orange-50"><b>Peringatan Konfigurasi:</b><br>Harap ganti nilai <code>BACKEND_URL</code> di dalam kode dengan alamat IP VPS Anda yang sebenarnya.</td></tr>`;
+                    loadingRow.classList.add('hidden');
+                    return;
+                }
+
+                loadingRow.classList.remove('hidden');
+                emptyRow.classList.add('hidden');
+                bookingsTableBody.innerHTML = '';
+                bookingsTableBody.appendChild(loadingRow);
+
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/get-bookings`);
+                    if (!response.ok) throw new Error('Gagal mengambil data dari server.');
+                    const bookings = await response.json();
+                    renderTable(bookings);
+                } catch (error) {
+                    console.error("Gagal mengambil data:", error);
+                    bookingsTableBody.innerHTML = `<tr id="error-row"><td colspan="6" class="text-center p-16 text-red-500">Gagal memuat data. Periksa koneksi ke server atau pastikan alamat URL backend sudah benar.</td></tr>`;
+                }
+            }
+
+            // Event Listeners
+            refreshBtn.addEventListener('click', fetchBookings);
+
+            // Initial Load
+            fetchBookings();
+            feather.replace();
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
+    </script>
+</body>
+</html>

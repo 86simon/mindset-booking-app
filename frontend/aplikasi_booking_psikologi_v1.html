@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Layanan - Mindset Psychology & Counseling</title>
+    
+    <!-- Favicon - dengan cache-busting query -->
+    <link rel="icon" type="image/png" href="images/logo.png?v=2">
+
+    <!-- Midtrans Snap.js (Sandbox) -->
+    <script type="text/javascript"
+      src="https://app.sandbox.midtrans.com/snap/snap.js"
+      data-client-key="SB-Mid-client-xxxxxxxxxxxxxxxxxxxx"></script> 
+      <!-- PENTING: Ganti dengan Client Key Sandbox Midtrans Anda -->
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Feather Icons for UI elements -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        /* Custom styles with brand colors from your logo */
+        :root {
+            --brand-green: #9ec05d;
+            --brand-green-dark: #8cae52;
+            --brand-green-darker: #6b843e;
+            --brand-green-light: #f2f7e9;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            color: white;
+        }
+        .step-active {
+            background-color: var(--brand-green);
+        }
+        .step-inactive {
+            background-color: #94a3b8; /* slate-400 */
+        }
+        .calendar-day:not(.disabled):hover {
+            background-color: var(--brand-green-light);
+            color: var(--brand-green-darker);
+            cursor: pointer;
+        }
+        .calendar-day.selected {
+            background-color: var(--brand-green);
+            color: white;
+            font-weight: bold;
+        }
+        .time-slot:not(.disabled):hover {
+            background-color: var(--brand-green-light);
+            border-color: var(--brand-green);
+            cursor: pointer;
+        }
+        .time-slot.selected {
+            background-color: var(--brand-green);
+            color: white;
+            border-color: var(--brand-green);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--brand-green);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12">
+            <img src="images/logo.png?v=2" alt="Logo Mindset Psychology & Counseling" class="w-24 h-24 mx-auto mb-4 rounded-full" onerror="this.onerror=null; this.src='https://placehold.co/96x96/9ec05d/ffffff?text=Logo';">
+            <h1 class="text-3xl md:text-4xl font-bold" style="color: var(--brand-green-darker);">Mindset Psychology & Counseling</h1>
+            <p class="mt-2 text-slate-500">Solusi Kesehatan Mental Anda, Selangkah Lebih Dekat.</p>
+        </header>
+
+        <!-- Service Selection Section -->
+        <section id="layanan-section">
+            <h2 class="text-2xl font-semibold text-center mb-8">Pilih Layanan yang Sesuai Untuk Anda</h2>
+            <div id="service-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Service cards will be injected here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Booking Flow Section (Initially Hidden) -->
+        <section id="booking-section" class="hidden">
+            <div id="booking-content-wrapper" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <div id="direct-booking-header-container"></div>
+                
+                <!-- Step Indicators -->
+                <div class="flex justify-between items-center mb-8 border-b pb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="step-1-indicator" class="step-indicator step-active">1</div>
+                        <span class="font-semibold hidden sm:inline">Pilih Jadwal</span>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-slate-200 mx-4"></div>
+                    <div class="flex items-center gap-3">
+                        <div id="step-2-indicator" class="step-indicator step-inactive">2</div>
+                        <span class="font-semibold hidden sm:inline">Isi Data Diri</span>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-slate-200 mx-4"></div>
+                    <div class="flex items-center gap-3">
+                        <div id="step-3-indicator" class="step-indicator step-inactive">3</div>
+                        <span class="font-semibold hidden sm:inline">Konfirmasi</span>
+                    </div>
+                </div>
+
+                <!-- Step 1: Schedule Selection -->
+                <div id="step-1-content">
+                    <h3 class="text-xl font-semibold mb-1">Pilih Tanggal & Waktu Sesi</h3>
+                    <p class="text-slate-500 mb-6">Pilih tanggal yang tersedia pada kalender di bawah ini.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+                        <div class="md:col-span-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <button id="prev-month" class="p-2 rounded-full hover:bg-slate-100 transition-all"><i data-feather="chevron-left"></i></button>
+                                <h4 id="month-year" class="text-lg font-semibold w-40 text-center"></h4>
+                                <button id="next-month" class="p-2 rounded-full hover:bg-slate-100 transition-all"><i data-feather="chevron-right"></i></button>
+                            </div>
+                            <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center"></div>
+                        </div>
+                        <div id="time-slots-container" class="md:col-span-2 hidden">
+                            <h4 class="font-semibold mb-4 text-center md:text-left">Pilih Waktu Tersedia</h4>
+                            <div id="time-slots-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-3"></div>
+                        </div>
+                    </div>
+                    <div class="text-right mt-8">
+                        <button id="to-step-2-btn" class="text-white font-semibold py-2 px-6 rounded-lg transition-all disabled:bg-slate-300 disabled:cursor-not-allowed" style="background-color: var(--brand-green);" onmouseover="this.style.backgroundColor='var(--brand-green-dark)';" onmouseout="this.style.backgroundColor='var(--brand-green)';" disabled>Lanjutkan</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: User Information Form -->
+                <div id="step-2-content" class="hidden">
+                    <h3 class="text-xl font-semibold mb-1">Data Diri Anda</h3>
+                    <p class="text-slate-500 mb-6">Informasi ini akan digunakan untuk konfirmasi booking.</p>
+                    <form id="booking-form" class="space-y-4">
+                        <div>
+                            <label for="fullName" class="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
+                            <input type="text" id="fullName" name="fullName" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--brand-green)" required>
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-slate-600 mb-1">Alamat Email</label>
+                            <input type="email" id="email" name="email" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--brand-green)" required>
+                        </div>
+                        <div>
+                            <label for="whatsapp" class="block text-sm font-medium text-slate-600 mb-1">Nomor WhatsApp</label>
+                            <input type="tel" id="whatsapp" name="whatsapp" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--brand-green)" placeholder="Contoh: 081234567890" required>
+                        </div>
+                        <div>
+                            <label for="notes" class="block text-sm font-medium text-slate-600 mb-1">Keluhan Singkat (Opsional)</label>
+                            <textarea id="notes" name="notes" rows="3" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--brand-green)" placeholder="Anda bisa ceritakan singkat apa yang ingin dikonsultasikan."></textarea>
+                        </div>
+                    </form>
+                    <div class="flex justify-between mt-8">
+                        <button id="back-to-step-1-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-6 rounded-lg hover:bg-slate-300 transition-all">Kembali</button>
+                        <button id="to-step-3-btn" class="text-white font-semibold py-2 px-6 rounded-lg transition-all" style="background-color: var(--brand-green);" onmouseover="this.style.backgroundColor='var(--brand-green-dark)';" onmouseout="this.style.backgroundColor='var(--brand-green)';">Lihat Ringkasan</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirmation Summary -->
+                <div id="step-3-content" class="hidden">
+                    <h3 class="text-xl font-semibold mb-6 text-center">Ringkasan Booking Anda</h3>
+                    <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-slate-500">Layanan</h4>
+                            <p id="summary-service" class="text-lg font-semibold"></p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-slate-500">Jadwal Sesi</h4>
+                                <p id="summary-schedule" class="text-lg font-semibold"></p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-slate-500">Total Pembayaran</h4>
+                                <p id="summary-price" class="text-lg font-semibold"></p>
+                            </div>
+                        </div>
+                         <div class="border-t border-slate-200 pt-4">
+                            <h4 class="text-sm font-medium text-slate-500">Detail Klien</h4>
+                            <p id="summary-name" class="font-semibold"></p>
+                            <p id="summary-email" class="text-slate-600"></p>
+                            <p id="summary-whatsapp" class="text-slate-600"></p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 text-center mt-4">Pastikan semua data sudah benar sebelum melanjutkan ke pembayaran.</p>
+                     <div class="flex justify-between mt-8">
+                        <button id="back-to-step-2-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-6 rounded-lg hover:bg-slate-300 transition-all">Kembali</button>
+                        <button id="pay-btn" class="text-white font-bold py-3 px-8 rounded-lg transition-all flex items-center justify-center gap-2 min-w-[220px]" style="background-color: var(--brand-green);" onmouseover="this.style.backgroundColor='var(--brand-green-dark)';" onmouseout="this.style.backgroundColor='var(--brand-green)';">
+                            <i data-feather="lock" class="w-5 h-5"></i>
+                            <span id="pay-btn-text">Lanjutkan ke Pembayaran</span>
+                            <div id="pay-btn-loader" class="loader hidden"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Confirmation Section (Initially Hidden) -->
+        <section id="konfirmasi-section" class="hidden text-center bg-white p-8 md:p-12 rounded-2xl shadow-lg">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: var(--brand-green-light); color: var(--brand-green-darker);">
+                <i data-feather="check" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Pembayaran Berhasil!</h2>
+            <p class="text-slate-500 mb-6 max-w-md mx-auto">Terima kasih. Konfirmasi booking dan detail sesi akan segera kami kirimkan ke alamat email Anda.</p>
+            <button id="book-again-btn" class="text-white font-semibold py-2 px-6 rounded-lg transition-all" style="background-color: var(--brand-green);" onmouseover="this.style.backgroundColor='var(--brand-green-dark)';" onmouseout="this.style.backgroundColor='var(--brand-green)';">Buat Booking Lain</button>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-slate-400 text-sm">
+            <p>&copy; <span id="current-year"></span> Mindset Psychology & Counseling. Semua hak dilindungi.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ganti dengan Alamat IP atau Domain VPS Anda
+            const BACKEND_URL = 'http://[ALAMAT_IP_VPS_ANDA]:3000'; 
+
+            // --- DATA ---
+            const services = [
+                { id: 1, name: "Konseling Online", price: 200000, desc: "Sesi konseling fleksibel yang dapat diakses dari mana saja melalui platform digital." },
+                { id: 2, name: "Konseling Individu Anak", price: 500000, desc: "Pendekatan khusus untuk membantu anak mengatasi tantangan emosional dan perkembangan." },
+                { id: 3, name: "Konseling Psikologi Individu Dewasa", price: 350000, desc: "Sesi tatap muka satu-satu untuk mengatasi masalah personal, stres, dan kecemasan." },
+                { id: 4, name: "Konseling Pasangan (Pernikahan & Pranikah)", price: 500000, desc: "Membantu pasangan membangun fondasi yang kuat dan mengatasi konflik hubungan." },
+                { id: 5, name: "Psikoterapi", price: 350000, desc: "Terapi mendalam untuk menangani gangguan psikologis dan mencapai perubahan jangka panjang." },
+                { id: 6, name: "Psikotest: Tes Kognitif", price: 450000, desc: "Evaluasi fungsi kognitif seperti kecerdasan, memori, dan perhatian secara komprehensif." },
+                { id: 7, name: "Psikotest: Tes Kepribadian", price: 400000, desc: "Pahami tipe kepribadian, kekuatan, dan area pengembangan diri Anda secara mendalam." },
+                { id: 8, name: "Mental Health Check Up (MHCU)", price: 500000, desc: "Pemeriksaan menyeluruh untuk mengetahui kondisi kesehatan mental Anda saat ini." },
+                { id: 9, name: "Psikotest: Tes Bakat Minat & Gaya Belajar", price: 450000, desc: "Bantu temukan potensi, minat karir, dan gaya belajar yang paling efektif untuk Anda." },
+            ];
+            // Jam layanan diperbarui
+            const availableTimeSlots = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00"];
+
+            // --- STATE ---
+            let bookingState = { service: null, date: null, time: null, userInfo: {} };
+            let currentDate = new Date();
+
+            // --- DOM ELEMENTS ---
+            const serviceList = document.getElementById('service-list');
+            const layananSection = document.getElementById('layanan-section');
+            const bookingSection = document.getElementById('booking-section');
+            const konfirmasiSection = document.getElementById('konfirmasi-section');
+            const step1Content = document.getElementById('step-1-content');
+            const step2Content = document.getElementById('step-2-content');
+            const step3Content = document.getElementById('step-3-content');
+            const payBtn = document.getElementById('pay-btn');
+            const payBtnText = document.getElementById('pay-btn-text');
+            const payBtnLoader = document.getElementById('pay-btn-loader');
+            const bookAgainBtn = document.getElementById('book-again-btn');
+            const bookingForm = document.getElementById('booking-form');
+            const step1Indicator = document.getElementById('step-1-indicator');
+            const step2Indicator = document.getElementById('step-2-indicator');
+            const step3Indicator = document.getElementById('step-3-indicator');
+            const calendarGrid = document.getElementById('calendar-grid');
+            const monthYearEl = document.getElementById('month-year');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const timeSlotsContainer = document.getElementById('time-slots-container');
+            const timeSlotsGrid = document.getElementById('time-slots-grid');
+            const toStep2Btn = document.getElementById('to-step-2-btn');
+            const toStep3Btn = document.getElementById('to-step-3-btn');
+            const backToStep1Btn = document.getElementById('back-to-step-1-btn');
+            const backToStep2Btn = document.getElementById('back-to-step-2-btn');
+            const directBookingHeaderContainer = document.getElementById('direct-booking-header-container');
+
+            // --- HELPER FUNCTIONS ---
+            const getUrlParameter = (name) => {
+                name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+                const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+                const results = regex.exec(location.search);
+                return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+            };
+
+            // --- RENDER FUNCTIONS ---
+            const renderServices = () => {
+                serviceList.innerHTML = services.map(service => `
+                    <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col">
+                        <h3 class="text-lg font-bold mb-2" style="color: var(--brand-green-darker);">${service.name}</h3>
+                        <p class="text-slate-500 text-sm mb-4 flex-grow">${service.desc}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-semibold" style="color: var(--brand-green-dark);">Rp ${service.price.toLocaleString('id-ID')}</span>
+                            <button data-service-id="${service.id}" class="book-btn text-white font-semibold py-2 px-4 rounded-lg transition-all" style="background-color: var(--brand-green);" onmouseover="this.style.backgroundColor='var(--brand-green-dark)';" onmouseout="this.style.backgroundColor='var(--brand-green)';">Booking</button>
+                        </div>
+                    </div>`).join('');
+            };
+
+            const renderCalendar = () => {
+                calendarGrid.innerHTML = '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                monthYearEl.textContent = `${currentDate.toLocaleString('id-ID', { month: 'long' })} ${year}`;
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                dayHeaders.forEach(day => { calendarGrid.innerHTML += `<div class="font-bold text-xs text-slate-500">${day}</div>`; });
+                for (let i = 0; i < firstDay; i++) { calendarGrid.innerHTML += '<div></div>'; }
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayDate = new Date(year, month, day);
+                    const isDisabled = dayDate < today;
+                    const isSelected = bookingState.date && dayDate.getTime() === new Date(bookingState.date).getTime();
+                    calendarGrid.innerHTML += `<div class="calendar-day p-2 rounded-full ${isDisabled ? 'text-slate-300 cursor-not-allowed' : ''} ${isSelected ? 'selected' : ''}" data-date="${dayDate.toISOString()}">${day}</div>`;
+                }
+            };
+
+            const renderTimeSlots = () => {
+                timeSlotsGrid.innerHTML = '';
+                if (!bookingState.date) { timeSlotsContainer.classList.add('hidden'); return; }
+                timeSlotsContainer.classList.remove('hidden');
+                availableTimeSlots.forEach(time => {
+                    const isSelected = bookingState.time === time;
+                    timeSlotsGrid.innerHTML += `<div class="time-slot border-2 border-slate-300 rounded-lg p-2 text-center ${isSelected ? 'selected' : ''}" data-time="${time}">${time}</div>`;
+                });
+            };
+            
+            const updateSummary = () => {
+                if(!bookingState.service || !bookingState.date || !bookingState.time || !bookingState.userInfo.fullName) return;
+                const service = services.find(s => s.id === bookingState.service.id);
+                const date = new Date(bookingState.date);
+                document.getElementById('summary-service').textContent = service.name;
+                document.getElementById('summary-schedule').textContent = `${date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${bookingState.time}`;
+                document.getElementById('summary-price').textContent = `Rp ${service.price.toLocaleString('id-ID')}`;
+                document.getElementById('summary-name').textContent = bookingState.userInfo.fullName;
+                document.getElementById('summary-email').textContent = bookingState.userInfo.email;
+                document.getElementById('summary-whatsapp').textContent = bookingState.userInfo.whatsapp;
+            };
+            
+            // --- UI LOGIC ---
+            const goToStep = (step) => {
+                [step1Content, step2Content, step3Content].forEach(el => el.classList.add('hidden'));
+                [step1Indicator, step2Indicator, step3Indicator].forEach(el => { el.classList.remove('step-active'); el.classList.add('step-inactive'); });
+                if (step >= 1) { step1Indicator.classList.add('step-active'); }
+                if (step >= 2) { step2Indicator.classList.add('step-active'); }
+                if (step >= 3) { step3Indicator.classList.add('step-active'); updateSummary(); }
+                if (step === 1) step1Content.classList.remove('hidden');
+                if (step === 2) step2Content.classList.remove('hidden');
+                if (step === 3) step3Content.classList.remove('hidden');
+            };
+            
+            const checkStep1Completion = () => { toStep2Btn.disabled = !(bookingState.date && bookingState.time); };
+            
+            const startDirectBooking = (serviceId) => {
+                const service = services.find(s => s.id === serviceId);
+                if (service) {
+                    bookingState.service = service;
+                    layananSection.classList.add('hidden');
+                    bookingSection.classList.remove('hidden');
+                    directBookingHeaderContainer.innerHTML = `
+                        <div class="text-center mb-6">
+                            <p class="text-slate-600">Anda akan memesan layanan:</p>
+                            <h3 class="text-xl font-bold" style="color: var(--brand-green-darker);">${service.name}</h3>
+                            <a href="${window.location.pathname}" class="text-sm text-slate-500 hover:text-slate-800 underline mt-1 inline-block">Pilih Layanan Lain</a>
+                        </div>`;
+                    renderCalendar();
+                } else {
+                    layananSection.classList.remove('hidden');
+                    renderServices();
+                }
+            };
+
+            // --- EVENT LISTENERS ---
+            serviceList.addEventListener('click', (e) => {
+                const button = e.target.closest('.book-btn');
+                if (button) {
+                    bookingState.service = services.find(s => s.id === parseInt(button.dataset.serviceId));
+                    layananSection.classList.add('hidden');
+                    bookingSection.classList.remove('hidden');
+                    renderCalendar();
+                }
+            });
+            prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+            nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+            calendarGrid.addEventListener('click', (e) => {
+                const target = e.target.closest('.calendar-day');
+                if (target && !target.classList.contains('text-slate-300')) {
+                    bookingState.date = target.dataset.date;
+                    bookingState.time = null;
+                    renderCalendar(); renderTimeSlots(); checkStep1Completion();
+                }
+            });
+            timeSlotsGrid.addEventListener('click', (e) => {
+                const target = e.target.closest('.time-slot');
+                if (target) { bookingState.time = target.dataset.time; renderTimeSlots(); checkStep1Completion(); }
+            });
+            toStep2Btn.addEventListener('click', () => goToStep(2));
+            backToStep1Btn.addEventListener('click', () => goToStep(1));
+            toStep3Btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (bookingForm.checkValidity()) {
+                    bookingState.userInfo = Object.fromEntries(new FormData(bookingForm).entries());
+                    goToStep(3);
+                } else { bookingForm.reportValidity(); }
+            });
+            backToStep2Btn.addEventListener('click', () => goToStep(2));
+
+            // --- MAIN BOOKING ACTION WITH MIDTRANS ---
+            payBtn.addEventListener('click', async () => {
+                payBtn.disabled = true;
+                payBtnText.classList.add('hidden');
+                payBtnLoader.classList.remove('hidden');
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/buat-transaksi`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bookingState)
+                    });
+                    if (!response.ok) throw new Error('Gagal membuat transaksi di server.');
+                    const data = await response.json();
+                    const { token } = data;
+                    window.snap.pay(token, {
+                        onSuccess: function(result){
+                            bookingSection.classList.add('hidden');
+                            konfirmasiSection.classList.remove('hidden');
+                        },
+                        onPending: function(result){
+                            alert("Pembayaran Anda sedang diproses.");
+                            window.location.href = window.location.pathname;
+                        },
+                        onError: function(result){ alert("Pembayaran gagal. Silakan coba lagi."); },
+                        onClose: function(){ console.log('Customer closed popup.'); }
+                    });
+                } catch (e) {
+                    console.error("Error:", e);
+                    alert("Terjadi kesalahan. Silakan coba lagi.");
+                } finally {
+                    payBtn.disabled = false;
+                    payBtnText.classList.remove('hidden');
+                    payBtnLoader.classList.add('hidden');
+                }
+            });
+            
+            bookAgainBtn.addEventListener('click', () => { window.location.href = window.location.pathname; });
+
+            // --- INITIALIZATION ---
+            const serviceIdFromUrl = parseInt(getUrlParameter('layanan'));
+            if (serviceIdFromUrl) { startDirectBooking(serviceIdFromUrl); } else { renderServices(); }
+            feather.replace();
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
+    </script>
+</body>
+</html>
