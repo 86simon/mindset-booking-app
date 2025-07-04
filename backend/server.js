@@ -3,7 +3,7 @@
 // 1. Impor semua package yang dibutuhkan
 const express = require('express');
 const { MongoClient } = require('mongodb');
-const midtransClient = require('midtrans-client-js');
+const midtransClient = require('midtrans-client'); // <-- PERBAIKAN DI SINI
 const cors = require('cors');
 require('dotenv').config(); // Memuat variabel dari file .env
 
