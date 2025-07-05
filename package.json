@@ -1,0 +1,19 @@
+{
+  "name": "aplikasi-booking-backend",
+  "version": "1.0.0",
+  "description": "Backend untuk aplikasi booking Mindset Psychology & Counseling",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Simon Sarbunan",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "midtrans-client": "^1.3.1",
+    "mongodb": "^6.7.0"
+  }
+}
